@@ -1,15 +1,18 @@
 function [lambdaSR,PD_sr,PD_rd] = fbinsearchRelay(PL_sd,PL_sr,PL_rd,Pmax,lambdaMin,lambdaMax,tol)
 
-lambdaMin0 = lambdaMin;
-lambdaMax0 = lambdaMax;
-
+Pd_direct(1) = max(min(lambdaMax*PL_rd/(log(2)*(PL_sr + PL_rd - PL_sd)) - 1/PL_sr,Pmax),0);
+while Pd_direct(1) == 0
+    lambdaMin = lambdaMax;
+    lambdaMax = lambdaMax*10^3;            
+    Pd_direct(1) = max(min(lambdaMax*PL_rd/(log(2)*(PL_sr + PL_rd - PL_sd)) - 1/PL_sr,Pmax),0);
+end
 % Source - Relay
 Nmax = 100; %log2(abs(lambdaMax - lambdaMin)/tol) + 1; 
-ii = 1; 
-while abs(lambdaMin - lambdaMax) > tol && Nmax > ii
+ii = 2; 
+while abs(lambdaMin - lambdaMax) > tol && Nmax > ii            
     lambda(ii) = (lambdaMin + lambdaMax)/2;
-    Pd_direct(ii) = max(min(lambda(ii)/PL_rd/(log(2)* (1/PL_sr + 1/PL_rd - 1/PL_sd)) - 1/PL_sr,Pmax),0);
-    if Pd_direct(ii) < max(min(lambdaMin/log(2) - 1/PL_sd,Pmax),0);
+    Pd_direct(ii) = max(min(lambda(ii)*PL_rd/(log(2)*(PL_sr + PL_rd - PL_sd)) - 1/PL_sr,Pmax),0);            
+    if Pd_direct(ii) < max(min(lambdaMin*PL_rd/(log(2)*(PL_sr + PL_rd - PL_sd)) - 1/PL_sr,Pmax),0)
         lambdaMin = lambda(ii);
     else
         lambdaMax = lambda(ii);
@@ -18,10 +21,13 @@ while abs(lambdaMin - lambdaMax) > tol && Nmax > ii
 end
 lambdaSR = lambda(end);
 PD_sr = Pd_direct(end);
-
-figure(4);
-plot(lambda,log2(1+Pd_direct/PL_sd));
-
+plot(lambda,Pd_direct)
 %% Relay - Destination
-PD_rd = max(PD_sr*(1/PL_sr-1/PL_sd)/PL_rd,0);
+PD_rd = max((PL_sr-PL_sd)/PL_rd*PD_sr,0);
+%% Capacity for debugging
+disp('ere');
+
+
+
+
 
