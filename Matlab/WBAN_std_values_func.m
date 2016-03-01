@@ -5,13 +5,14 @@ clc; clear; close all;
 % [2]. IEEE Std 802.15.6TM-2012 IEEE Standard for Local and metropolitan area networks Part 15.6: Wireless Body Area Networks
 %% Variables
 Lp = 255; % MAC payload length
-xMCS = 1; % Mode -- Variable
+xMCS = 3; % Mode -- Variable
 Nslots = 256; % Variable
 AllocSlotLength = 255; % Variable -- AllocSlotLength \in {0,255}
 kappa = 1; % Nr of uploads or frames
 m = 5; % m-periodic sleep
 powerLevel = 4;
 %%
+figure(1);
 yAll = (0:5); % Set it for No. of uploads -- kappa
 xAll = [1,3,5]; % Set it for m-periodic sleep
 LifeTime = zeros(length(xAll),length(yAll));
@@ -40,4 +41,32 @@ grid on;
 legend(lstr,'fontsize',12);
 xlabel('Number of uploads -- kappa');
 ylabel('Lifetime (years)')
-LifeTime
+
+%%
+figure(2);
+close;
+figure(2);
+
+Lp = 255; % MAC payload length
+xMCS = 3; % Mode -- Variable
+Nslots = 256; % Variable
+AllocSlotLength = 255; % Variable -- AllocSlotLength \in {0,255}
+kappa = 1; % Nr of uploads or frames
+m = 5; % m-periodic sleep
+powerLevel = 1;
+
+yAll2 = (0:5); % Set it for No. of uploads -- kappa
+xAll2 = 1:4; % Set it for m-periodic sleep
+LifeTime2 = zeros(length(xAll2),length(yAll2));
+sgn = {'-o','-s','-d','-<','->','-v'};
+Ackmode = 1; % 0 for I-Ack, 1 for B-Ack
+for ii = 1:length(xAll2)
+    xMCS = xAll2(ii);
+    for jj = 1:length(yAll2)
+        kappa = yAll2(jj);
+        LifeTime2(ii,jj) = calculateLifeTime(Lp,xMCS,Nslots,AllocSlotLength,kappa,m,powerLevel,Ackmode);
+    end
+    lstr{ii} = ['B: m = ',num2str(m)];
+    plot(yAll2,LifeTime2(ii,:),sgn{ii},'color',rand(3,1),'linewidth',2,'markersize',10); hold on;
+end
+grid on;

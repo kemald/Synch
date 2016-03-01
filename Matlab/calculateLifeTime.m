@@ -15,35 +15,36 @@ spreadingF = [4 2 1 1];
 modulationM = [2 2 2 4];
 rate = Rs.*log2(modulationM)./spreadingF.*coderate_k./coderate_n;
 
-plcpheader = Rs.*log2(2)./4*19/31;
+% plcpheader = Rs.*log2(2)./4*19/31;
 fprintf('Data rate is %2.2f kbps \n',rate(xMCS)/1e3);
 %% Frame Structure
 % Preamble
-% Npreamble = 90; % verify this in the standard
-% tpreamble = Npreamble/Rs;
-% % Header
-% Ncoded = 31;
-% spreadingPLCPHeader = 4;
-% tPLCheader = Ncoded.*spreadingPLCPHeader/Rs;
-% % Physical Layer Service Data Unit (PSDU)
-% L_MACheader = 7; % 7 Octets
-% L_FCS = 2; % 2 Octets
-% N_PSDU = 8*(L_MACheader + Lp + L_FCS); % 8 to account for Octets
-% N_parity = ceil(N_PSDU/coderate_k(xMCS))*(coderate_n(xMCS) - coderate_k(xMCS));
-% % Padding
-% N_pad = log2(modulationM(xMCS)).*ceil((N_PSDU + N_parity)/log2(modulationM(xMCS))) - (N_PSDU + N_parity); % verify this on [1]
-% % Total length of the PSDU in bits after spreading
-% N_total = (N_PSDU + N_parity + N_pad)*spreadingF(xMCS);
-% %% Frame Duration
-% tPSDU = N_total/(log2(modulationM(xMCS))*Rs);
+Npreamble = 90; % verify this in the standard
+tpreamble = Npreamble/Rs;
+% Header
+Ncoded = 31;
+spreadingPLCPHeader = 4;
+tPLCheader = Ncoded.*spreadingPLCPHeader/Rs;
+% Physical Layer Service Data Unit (PSDU)
+L_MACheader = 7; % 7 Octets
+L_FCS = 2; % 2 Octets
+N_PSDU = 8*(L_MACheader + Lp + L_FCS); % 8 to account for Octets
+N_parity = ceil(N_PSDU/coderate_k(xMCS))*(coderate_n(xMCS) - coderate_k(xMCS));
+% Padding
+N_pad = log2(modulationM(xMCS)).*ceil((N_PSDU + N_parity)/log2(modulationM(xMCS))) - (N_PSDU + N_parity); % verify this on [1]
+% Total length of the PSDU in bits after spreading
+N_total = (N_PSDU + N_parity + N_pad)*spreadingF(xMCS);
+% Frame Duration
+tPSDU = N_total/(log2(modulationM(xMCS))*Rs);
+
 pAllocationSlotMin = 1e-3; % Standards says it is 1 msec
 pAllcationSlotRes = 1e-3; % Standards says it is 1 msec
 Tslot = pAllocationSlotMin + AllocSlotLength * pAllcationSlotRes; % ranges from 1 ms to 256 msec
 Tsf = Nslots*Tslot; % range from 1ms to 65.536 seconds
 fprintf('Time Slot duration: %2.2f sec \n',Tslot);
 fprintf('Super frame duration: %2.2f sec \n',Tsf);
-% tframe = tpreamble + tPLCheader + tPSDU; % Total time to transmit a frame with MAC payload length of Lp bytes using TX mode xMCS
-% fprintf('Total time to transmit a frame with MAC payload length of Lp bytes: %2.2f sec \n',tframe);
+tframe = tpreamble + tPLCheader + tPSDU; % Total time to transmit a frame with MAC payload length of Lp bytes using TX mode xMCS
+fprintf('Total time to transmit a frame with MAC payload length of Lp bytes: %2.2f sec \n',tframe);
 %% Guard Time
 TSIFS = 50e-6;
 TIACK = 99.67e-6;
@@ -67,15 +68,15 @@ else
 end
 fprintf('Guard Time: %2.6f seconds \n',GTn);
 %% State Times
+Tbeacon = 20*8/Rs;
+Tdata = tframe;
 if Ackmode == 1 % B-Ack
     Tcal = 3.13e-3;
     TMIFS = 20e-6;
-    Tbeacon = 20*8/plcpheader; % /rate(xMCS);% /coderate(xMCS); % 8 symbols  (???)              %%%Problem, I think it has been solved.
     TbACK = TIACK*kappa;
-    Tdata = (Lp)/rate(xMCS); %/coderate(xMCS);                                      %%%Problem. Not sure.
     Trx = Tbeacon + TbACK;
     Ttx = kappa * Tdata;
-    Trxlisten = GTSI + (kappa - 1) * TMIFS + TSIFS;
+    Trxlisten = GTSI + max(kappa - 1,0) * TMIFS + TSIFS;
     Twakeup = 2*Tcal;
     TStandby = max(m * Tsf - Trx - Ttx - Trxlisten - Twakeup,0);
     fprintf('\nm-superframes: %2.5f sec \n',m*Tsf);
@@ -85,9 +86,7 @@ if Ackmode == 1 % B-Ack
     fprintf('T-wakeup: %2.5f sec \n',Twakeup);
     fprintf('T-Standby: %2.5f sec \n\n',TStandby);
 else % I-Ack
-    Tcal = 3.13e-3;
-    Tbeacon = 20*8/plcpheader; % rate(xMCS); %/coderate(xMCS); % 8 symbols
-    Tdata = (Lp)/rate(xMCS); %/coderate(xMCS);   
+    Tcal = 3.13e-3; 
     Trx = Tbeacon + kappa*TIACK;
     Ttx = kappa * Tdata;
     Trxlisten = GTSI + kappa * TSIFS;
